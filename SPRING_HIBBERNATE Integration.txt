@@ -1,0 +1,555 @@
+Spring-Hibernate Integration:
+
+
+Person.jsp:
+
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://www.springframework.org/tags" prefix="spring" %>
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form" %>
+<%@ page session="false" %>
+<html>
+<head>
+	<title>Person Page</title>
+	<style type="text/css">
+		.tg  {border-collapse:collapse;border-spacing:0;border-color:#ccc;}
+		.tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#ccc;color:#333;background-color:#fff;}
+		.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#ccc;color:#333;background-color:#f0f0f0;}
+		.tg .tg-4eph{background-color:#f9f9f9}
+	</style>
+</head>
+<body>
+<h1>
+	Add a Person
+</h1>
+
+<c:url var="addAction" value="/person/add" ></c:url>
+
+<form:form action="${addAction}" commandName="person">
+<table>
+	<c:if test="${!empty person.name}">
+	<tr>
+		<td>
+			<form:label path="id">
+				<spring:message text="ID"/>
+			</form:label>
+		</td>
+		<td>
+			<form:input path="id" readonly="true" size="8"  disabled="true" />
+			<form:hidden path="id" />
+		</td> 
+	</tr>
+	</c:if>
+	<tr>
+		<td>
+			<form:label path="name">
+				<spring:message text="Name"/>
+			</form:label>
+		</td>
+		<td>
+			<form:input path="name" />
+		</td> 
+	</tr>
+	<tr>
+		<td>
+			<form:label path="country">
+				<spring:message text="Country"/>
+			</form:label>
+		</td>
+		<td>
+			<form:input path="country" />
+		</td>
+	</tr>
+	<tr>
+		<td colspan="2">
+			<c:if test="${!empty person.name}">
+				<input type="submit"
+					value="<spring:message text="Edit Person"/>" />
+			</c:if>
+			<c:if test="${empty person.name}">
+				<input type="submit"
+					value="<spring:message text="Add Person"/>" />
+			</c:if>
+		</td>
+	</tr>
+</table>	
+</form:form>
+<br>
+<h3>Persons List</h3>
+<c:if test="${!empty listPersons}">
+	<table class="tg">
+	<tr>
+		<th width="80">Person ID</th>
+		<th width="120">Person Name</th>
+		<th width="120">Person Country</th>
+		<th width="60">Edit</th>
+		<th width="60">Delete</th>
+	</tr>
+	<c:forEach items="${listPersons}" var="person">
+		<tr>
+			<td>${person.id}</td>
+			<td>${person.name}</td>
+			<td>${person.country}</td>
+			<td><a href="<c:url value='/edit/${person.id}' />" >Edit</a></td>
+			<td><a href="<c:url value='/remove/${person.id}' />" >Delete</a></td>
+		</tr>
+	</c:forEach>
+	</table>
+</c:if>
+</body>
+</html>
+***********************************************************************************
+
+***********************************************************************************
+xml files:
+
+rootContent.xml:
+***************
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	
+	<!-- Root Context: defines shared resources visible to all other web components -->
+		
+</beans>
+************************************************************
+Servlet-context.xml:
+*******************
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+
+	<!-- DispatcherServlet Context: defines this servlet's request-processing 
+		infrastructure -->
+
+	<!-- Enables the Spring MVC @Controller programming model -->
+	<annotation-driven />
+
+	<!-- Handles HTTP GET requests for /resources/** by efficiently serving 
+		up static resources in the ${webappRoot}/resources directory -->
+	<resources mapping="/resources/**" location="/resources/" />
+
+	<!-- Resolves views selected for rendering by @Controllers to .jsp resources 
+		in the /WEB-INF/views directory -->
+	<beans:bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+	</beans:bean>
+
+	<beans:bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<beans:property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<beans:property name="url"
+			value="jdbc:mysql://localhost:3306/springDB" />
+		<beans:property name="username" value="root" />
+		<beans:property name="password" value="dsrc" />
+	</beans:bean>
+
+	<!-- Hibernate 4 SessionFactory Bean definition -->
+	<beans:bean id="hibernate4AnnotatedSessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<beans:property name="dataSource" ref="dataSource" />
+		<beans:property name="annotatedClasses">
+			<beans:list>
+				<beans:value>com.dsrc.spring.model.Person</beans:value>
+			</beans:list>
+		</beans:property>
+		<beans:property name="hibernateProperties">
+			<beans:props>
+				<beans:prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect
+				</beans:prop>
+				<beans:prop key="hibernate.show_sql">true</beans:prop>
+			</beans:props>
+		</beans:property>
+	</beans:bean>
+	
+	<beans:bean id="personDAO" class="com.dsrc.spring.dao.PersonDAOImpl">
+		<beans:property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory" />
+	</beans:bean>
+	
+	<beans:bean id="personService" class="com.dsrc.spring.service.PersonServiceImpl">
+		<beans:property name="personDAO" ref="personDAO"></beans:property>
+	</beans:bean>
+	
+	<context:component-scan base-package="com.dsrc.spring" />
+	
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+	
+	<beans:bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<beans:property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory" />
+	</beans:bean>
+
+
+</beans:beans>
+*********************************************************************************
+************************************************************************************
+DAO classes:
+************
+PersonDAO.Java:
+***
+package com.dsrc.spring.dao;
+
+
+import java.util.List;
+
+
+import com.dsrc.spring.model.Person;
+
+
+public interface PersonDAO {
+
+	
+public void addPerson(Person p);
+
+	public void updatePerson(Person p);
+	
+public List<Person> listPersons();
+	
+public Person getPersonById(int id);
+	
+public void removePerson(int id);
+}
+***************************************************
+PersonDAOImpl.java
+******************
+package com.dsrc.spring.dao;
+
+
+import java.util.List;
+
+
+import org.hibernate.Session;
+
+import org.hibernate.SessionFactory;
+
+import org.slf4j.Logger;
+
+import org.slf4j.LoggerFactory;
+
+import org.springframework.stereotype.Repository;
+
+
+import com.dsrc.spring.model.Person;
+
+
+@Repository
+
+public class PersonDAOImpl implements PersonDAO {
+
+	
+	private static final Logger logger = LoggerFactory.getLogger(PersonDAOImpl.class);
+
+
+	private SessionFactory sessionFactory;
+	
+
+	public void setSessionFactory(SessionFactory sf){
+
+		this.sessionFactory = sf;
+	}
+
+	
+
+@Override
+	
+public void addPerson(Person p) {
+	
+	Session session = this.sessionFactory.getCurrentSession();
+		
+session.persist(p);
+		
+logger.info("Person saved successfully, Person Details="+p);
+	}
+
+
+
+	@Override
+	
+public void updatePerson(Person p) {
+	
+	Session session = this.sessionFactory.getCurrentSession();
+		
+session.update(p);
+	
+	logger.info("Person updated successfully, Person Details="+p);
+	}
+
+	
+
+@SuppressWarnings("unchecked")
+
+	@Override
+	
+public List<Person> listPersons() {
+	
+	Session session = this.sessionFactory.getCurrentSession();
+	
+	List<Person> personsList = session.createQuery("from Person").list();
+		
+for(Person p : personsList){
+	
+		logger.info("Person List::"+p);
+		}
+	
+	return personsList;
+	}
+
+	
+
+@Override
+	
+public Person getPersonById(int id) {
+		
+Session session = this.sessionFactory.getCurrentSession();		
+	
+	Person p = (Person) session.load(Person.class, new Integer(id));
+		
+logger.info("Person loaded successfully, Person details="+p);
+		
+return p;
+	}
+
+	
+
+@Override
+
+	public void removePerson(int id) {
+	
+	Session session = this.sessionFactory.getCurrentSession();
+		
+Person p = (Person) session.load(Person.class, new Integer(id));
+	
+	if(null != p){
+			
+session.delete(p);
+		}
+		
+logger.info("Person deleted successfully, person details="+p);
+	}
+
+}
+**********************************************************************************
+***********************************************************************************
+Bean.java:
+**********
+
+package com.dsrc.spring.model;
+
+import javax.persistence.Column;
+
+import javax.persistence.Entity;
+
+import javax.persistence.GeneratedValue;
+
+import javax.persistence.GenerationType;
+
+import javax.persistence.Id;
+
+import javax.persistence.Table;
+
+
+/**
+ * Entity bean with JPA annotations
+ *
+ Hibernate provides JPA implementation
+ * @author pankaj
+ *
+ */
+
+@Entity
+
+@Table(name="PERSON")
+
+public class Person {
+
+
+	@Id
+
+	@Column(name="id")
+
+	@GeneratedValue(strategy=GenerationType.IDENTITY)
+
+	private int id;
+	
+	
+@Column(name="name")
+
+	private String name;
+
+
+	@Column(name="country")
+	private String country;
+
+	
+public int getId() {
+		
+return id;
+	}
+
+	
+public void setId(int id) {
+
+		this.id = id;
+	}
+
+
+	public String getName() {
+
+		return name;
+	}
+
+
+	public void setName(String name) {
+
+		this.name = name;
+	}
+
+
+	public String getCountry() {
+	
+	return country;
+	}
+
+	
+public void setCountry(String country) {
+
+		this.country = country;
+	}
+
+	
+	@Override
+
+	public String toString(){
+		
+return "id="+id+", name="+name+", country="+country;
+	}
+}
+
+****************************************************************************************
+****************************************************************************************
+Controller.Java:
+***************
+PersonCOntroller.Java:
+**********************
+package com.dsrc.spring;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+
+import org.springframework.stereotype.Controller;
+
+import org.springframework.ui.Model;
+
+import org.springframework.web.bind.annotation.ModelAttribute;
+
+import org.springframework.web.bind.annotation.PathVariable;
+
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import org.springframework.web.bind.annotation.RequestMethod;
+
+
+import com.dsrc.spring.model.Person;
+
+import com.dsrc.spring.service.PersonService;
+
+
+
+@Controller
+
+public class PersonController {
+
+	
+	private PersonService personService;
+
+	
+@Autowired(required=true)
+	
+@Qualifier(value="personService")
+
+	
+public void setPersonService(PersonService ps){
+
+		this.personService = ps;
+	}
+	
+	
+@RequestMapping(value = "/persons", method = RequestMethod.GET)
+
+	public String listPersons(Model model) {
+	
+	model.addAttribute("person", new Person());
+	
+	model.addAttribute("listPersons", this.personService.listPersons());
+
+		return "person";
+	}
+	
+	
+
+//For add and update person both
+
+@RequestMapping(value= "/person/add", method = RequestMethod.POST)
+
+	public String addPerson(@ModelAttribute("person") Person p){
+	
+	
+		if(p.getId() == 0){
+
+    //new person, add it
+
+			this.personService.addPerson(p);
+	
+	}else{
+	
+		//existing person, call update
+
+			this.personService.updatePerson(p);
+
+		}
+	
+	
+		return "redirect:/persons";
+		
+	
+}
+
+	
+	@RequestMapping("/remove/{id}")
+
+    public String removePerson(@PathVariable("id") int id){
+	
+	
+        this.personService.removePerson(id);
+
+        return "redirect:/persons";
+
+    }
+ 
+  
+  @RequestMapping("/edit/{id}")
+ 
+   public String editPerson(@PathVariable("id") int id, Model model)
+{
+
+        model.addAttribute("person", this.personService.getPersonById(id));
+   
+     model.addAttribute("listPersons", this.personService.listPersons());
+  
+      return "person";
+    }
+
+	
+}
+***********************************************************************************************************
+*************************************************************************************************************:::::::
+End of Spring-Hibernate Integration!!
+*************************************
